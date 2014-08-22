@@ -437,12 +437,13 @@ int BLASFUNC(blas_thread_shutdown)(void){
   if (!blas_server_avail) return 0;
 
   LOCK_COMMAND(&server_lock);
+  threading_params_t * p = openblas_get_threading_params();
 
   if (blas_server_avail){
 
     SetEvent(pool.killed);
 
-    for(i = 0; i < blas_num_threads - 1; i++){
+    for(i = 0; i < p->num_threads - 1; i++){
      WaitForSingleObject(blas_threads[i], 5);  //INFINITE);
 	 TerminateThread(blas_threads[i],0);
     }
@@ -463,9 +464,11 @@ void goto_set_num_threads(int num_threads)
 
 	if (num_threads > MAX_CPU_NUMBER) num_threads = MAX_CPU_NUMBER;
 
-	if (num_threads > blas_num_threads) {
+  threading_params_t * p = openblas_get_threading_params();
+	if (num_threads > p->num_threads) {
 
 		LOCK_COMMAND(&server_lock);
+
 
 		//increased_threads = 1;
 	    if (!blas_server_avail){
@@ -479,14 +482,14 @@ void goto_set_num_threads(int num_threads)
 			blas_server_avail = 1;
 		}
 
-		for(i = blas_num_threads - 1; i < num_threads - 1; i++){
+		for(i = p->num_threads - 1; i < num_threads - 1; i++){
 
 			blas_threads[i] = CreateThread(NULL, 0,
 				     blas_thread_server, (void *)i,
 				     0, &blas_threads_id[i]);
 		}
 
-		blas_num_threads = num_threads;
+		p->num_threads = num_threads;
 
 		UNLOCK_COMMAND(&server_lock);
 	}

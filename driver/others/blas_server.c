@@ -463,8 +463,9 @@ static BLASLONG num_suspend = 0;
 static int blas_monitor(void *arg){
   int i;
 
+  threading_params_t * params = openblas_get_threading_params();
   while(1){
-    for (i = 0; i < blas_num_threads - 1; i++){
+    for (i = 0; i < params->num_threads - 1; i++){
       switch (main_status[i]) {
       case MAIN_ENTER :
 	fprintf(STDERR, "THREAD[%2d] : Entering.\n", i);
@@ -521,6 +522,9 @@ int blas_thread_init(void){
   pthread_attr_t attr;
 #endif
 
+  // Initialize threading parameters
+  threading_params_t * params = openblas_init_threading_params();
+
   if (blas_server_avail) return 0;
 
 #ifdef NEED_STACKATTR
@@ -550,7 +554,7 @@ int blas_thread_init(void){
 	}
 
 
-    for(i = 0; i < blas_num_threads - 1; i++){
+    for(i = 0; i < params->num_threads - 1; i++){
 
       thread_status[i].queue  = (blas_queue_t *)NULL;
       thread_status[i].status = THREAD_STATUS_WAKEUP;
@@ -599,7 +603,9 @@ int exec_blas_async(BLASLONG pos, blas_queue_t *queue){
 #ifdef SMP_SERVER
   // Handle lazy re-init of the thread-pool after a POSIX fork
   if (unlikely(blas_server_avail == 0)) blas_thread_init();
+
 #endif
+  threading_params_t * params = openblas_get_threading_params();
   BLASLONG i = 0;
   blas_queue_t *current = queue;
 #if defined(OS_LINUX) && !defined(NO_AFFINITY) && !defined(PARAMTEST)
@@ -629,12 +635,12 @@ int exec_blas_async(BLASLONG pos, blas_queue_t *queue){
       if (queue -> mode & BLAS_NODE) {
 
 	do {
-	  while((thread_status[i].node != node || thread_status[i].queue) && (i < blas_num_threads - 1)) i ++;
+	  while((thread_status[i].node != node || thread_status[i].queue) && (i < params->num_threads - 1)) i ++;
 
-	  if (i < blas_num_threads - 1) break;
+	  if (i < params->num_threads - 1) break;
 
 	  i ++;
-	  if (i >= blas_num_threads - 1) {
+	  if (i >= params->num_threads - 1) {
 	    i = 0;
 	    node ++;
 	    if (node >= nodes) node = 0;
@@ -645,13 +651,13 @@ int exec_blas_async(BLASLONG pos, blas_queue_t *queue){
       } else {
 	while(thread_status[i].queue) {
 	  i ++;
-	  if (i >= blas_num_threads - 1) i = 0;
+	  if (i >= params->num_threads - 1) i = 0;
 	}
       }
 #else
       while(thread_status[i].queue) {
 	i ++;
-	if (i >= blas_num_threads - 1) i = 0;
+	if (i >= params->num_threads - 1) i = 0;
       }
 #endif
 
@@ -788,8 +794,9 @@ int exec_blas(BLASLONG num, blas_queue_t *queue){
 void goto_set_num_threads(int num_threads) {
 
   long i;
+  threading_params_t * params = openblas_get_threading_params();
 
-  if (num_threads < 1) num_threads = blas_num_threads;
+  if (num_threads < 1) num_threads = params->num_threads;
 
 #ifndef NO_AFFINITY
   if (num_threads == 1) {
@@ -806,13 +813,13 @@ void goto_set_num_threads(int num_threads) {
 
   if (num_threads > MAX_CPU_NUMBER) num_threads = MAX_CPU_NUMBER;
 
-  if (num_threads > blas_num_threads) {
+  if (num_threads > params->num_threads) {
 
     LOCK_COMMAND(&server_lock);
 
     increased_threads = 1;
 
-    for(i = blas_num_threads - 1; i < num_threads - 1; i++){
+    for(i = params->num_threads - 1; i < num_threads - 1; i++){
 
       thread_status[i].queue  = (blas_queue_t *)NULL;
       thread_status[i].status = THREAD_STATUS_WAKEUP;
@@ -829,7 +836,7 @@ void goto_set_num_threads(int num_threads) {
 #endif
     }
 
-    blas_num_threads = num_threads;
+    params->num_threads = num_threads;
 
     UNLOCK_COMMAND(&server_lock);
   }
@@ -902,8 +909,9 @@ int BLASFUNC(blas_thread_shutdown)(void){
   if (!blas_server_avail) return 0;
 
   LOCK_COMMAND(&server_lock);
+  threading_params_t * params = openblas_get_threading_params();
 
-  for (i = 0; i < blas_num_threads - 1; i++) {
+  for (i = 0; i < params->num_threads - 1; i++) {
 
     blas_lock(&exec_queue_lock);
 
@@ -921,11 +929,11 @@ int BLASFUNC(blas_thread_shutdown)(void){
 
   }
 
-  for(i = 0; i < blas_num_threads - 1; i++){
+  for(i = 0; i < params->num_threads - 1; i++){
     pthread_join(blas_threads[i], NULL);
   }
 
-  for(i = 0; i < blas_num_threads - 1; i++){
+  for(i = 0; i < params->num_threads - 1; i++){
     pthread_mutex_destroy(&thread_status[i].lock);
     pthread_cond_destroy (&thread_status[i].wakeup);
   }

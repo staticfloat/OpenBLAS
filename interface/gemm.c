@@ -71,10 +71,6 @@
 #endif
 #endif
 
-#ifndef GEMM_MULTITHREAD_THRESHOLD
-#define GEMM_MULTITHREAD_THRESHOLD 4
-#endif
-
 static int (*gemm[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *, BLASLONG) = {
 #ifndef GEMM3M
   GEMM_NN, GEMM_TN, GEMM_RN, GEMM_CN,
@@ -403,13 +399,15 @@ void CNAME(enum CBLAS_ORDER order, enum CBLAS_TRANSPOSE TransA, enum CBLAS_TRANS
   int nthreads_max = num_cpu_avail(3);
   int nthreads_avail = nthreads_max;
 
-#ifndef COMPLEX
   double MNK = (double) args.m * (double) args.n * (double) args.k;
-  if ( MNK <= (65536.0  * (double) GEMM_MULTITHREAD_THRESHOLD)  )
+  threading_params_t * p = openblas_get_threading_params();
+  int gemm_threshold = p->gemm_threshold;
+#ifndef COMPLEX
+  if ( MNK <= (65536.0  * (double) gemm_threshold)  )
 	nthreads_max = 1;
 #else
   double MNK = (double) args.m * (double) args.n * (double) args.k;
-  if ( MNK <= (8192.0  * (double) GEMM_MULTITHREAD_THRESHOLD)  )
+  if ( MNK <= (8192.0  * (double) gemm_threshold)  )
 	nthreads_max = 1;
 #endif
   args.common = NULL;
@@ -428,6 +426,7 @@ void CNAME(enum CBLAS_ORDER order, enum CBLAS_TRANSPOSE TransA, enum CBLAS_TRANS
 #ifdef SMP
 
   } else {
+    p->threshold_surpassed++;
 
 #ifndef USE_SIMPLE_THREADED_LEVEL3
 

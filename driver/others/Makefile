@@ -1,7 +1,7 @@
 TOPDIR	= ../..
 include ../../Makefile.system
 
-COMMONOBJS	 = memory.$(SUFFIX) xerbla.$(SUFFIX) c_abs.$(SUFFIX) z_abs.$(SUFFIX) openblas_set_num_threads.$(SUFFIX) openblas_get_config.$(SUFFIX) openblas_get_parallel.$(SUFFIX) openblas_error_handle.$(SUFFIX)
+COMMONOBJS	 = memory.$(SUFFIX) xerbla.$(SUFFIX) c_abs.$(SUFFIX) z_abs.$(SUFFIX) openblas_threading_params.$(SUFFIX) openblas_get_config.$(SUFFIX) openblas_get_parallel.$(SUFFIX) openblas_error_handle.$(SUFFIX)
 
 #COMMONOBJS	+= slamch.$(SUFFIX) slamc3.$(SUFFIX) dlamch.$(SUFFIX)  dlamc3.$(SUFFIX)
 
@@ -100,7 +100,7 @@ memory.$(SUFFIX) : $(MEMORY) ../../common.h ../../param.h
 blas_server.$(SUFFIX) : $(BLAS_SERVER) ../../common.h ../../common_thread.h ../../param.h
 	$(CC) $(CFLAGS) -c $< -o $(@F)
 
-openblas_set_num_threads.$(SUFFIX) : openblas_set_num_threads.c
+openblas_threading_params.$(SUFFIX) : openblas_threading_params.c
 	$(CC) $(CFLAGS) -c $< -o $(@F)
 
 openblas_get_config.$(SUFFIX) : openblas_get_config.c

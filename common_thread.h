@@ -52,7 +52,6 @@ extern void goto_set_num_threads(int nthreads);
 
 /* Global Parameter */
 extern int blas_cpu_number;
-extern int blas_num_threads;
 extern int blas_omp_linked;
 
 #define BLAS_LEGACY	0x8000U
@@ -171,6 +170,22 @@ int exec_blas_async(BLASLONG num_cpu, blas_param_t *param, pthread_t *);
 int exec_blas_async_wait(BLASLONG num_cpu, pthread_t *blas_threads);
 int exec_blas(BLASLONG num_cpu, blas_param_t *param, void *buffer);
 #endif
+
+// This structure holds the thresholds and parameters used to tune multithreading
+typedef struct {
+  // Number of threads to use (supplants blas_num_threads)
+  uint32_t num_threads;
+
+  // Incremented every time a decision is made to thread due to a surpassed threshold
+  uint32_t threshold_surpassed;
+
+  // Threshold product of dimensions must exceed in order to force gemm to multithread
+  uint32_t gemm_threshold;
+} threading_params_t;
+
+threading_params_t * openblas_init_threading_params(void);
+threading_params_t * openblas_get_threading_params(void);
+void openblas_set_threading_params(threading_params_t * params);
 
 #ifndef ASSEMBLER
 

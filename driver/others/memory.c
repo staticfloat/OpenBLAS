@@ -148,7 +148,6 @@ extern void openblas_warning(int verbose, const char * msg);
 #ifndef SMP
 
 #define blas_cpu_number 1
-#define blas_num_threads 1
 
 /* Dummy Function */
 int  goto_get_num_procs  (void) { return 1;};
@@ -245,11 +244,6 @@ OpenBLAS uses the numbers of CPU cores in multithreading.
 It can be set by openblas_set_num_threads(int num_threads);
 */
 int blas_cpu_number  = 0;
-/*
-The numbers of threads in the thread pool.
-This value is equal or large than blas_cpu_number. This means some threads are sleep.
-*/
-int blas_num_threads = 0;
 
 int  goto_get_num_procs  (void) {
   return blas_cpu_number;
@@ -280,7 +274,8 @@ int blas_get_cpu_number(void){
   int blas_goto_num   = 0;
   int blas_omp_num    = 0;
 
-  if (blas_num_threads) return blas_num_threads;
+  threading_params_t * params = openblas_get_threading_params();
+  if (params->num_threads) return params->num_threads;
 
 #if defined(OS_LINUX) || defined(OS_WINDOWS) || defined(OS_FREEBSD) || defined(OS_DARWIN)
   max_num = get_num_procs();
@@ -302,23 +297,23 @@ int blas_get_cpu_number(void){
   if (readenv(p,"OMP_NUM_THREADS")) blas_omp_num = atoi(p);
   if (blas_omp_num < 0) blas_omp_num = 0;
 
-  if (blas_goto_num > 0) blas_num_threads = blas_goto_num;
-  else if (blas_omp_num > 0) blas_num_threads = blas_omp_num;
-  else blas_num_threads = MAX_CPU_NUMBER;
+  if (blas_goto_num > 0) params->num_threads = blas_goto_num;
+  else if (blas_omp_num > 0) params->num_threads = blas_omp_num;
+  else params->num_threads = MAX_CPU_NUMBER;
 
 #if defined(OS_LINUX) || defined(OS_WINDOWS) || defined(OS_FREEBSD) || defined(OS_DARWIN)
-  if (blas_num_threads > max_num) blas_num_threads = max_num;
+  if (params->num_threads > max_num) params->num_threads = max_num;
 #endif
 
-  if (blas_num_threads > MAX_CPU_NUMBER) blas_num_threads = MAX_CPU_NUMBER;
+  if (params->num_threads > MAX_CPU_NUMBER) params->num_threads = MAX_CPU_NUMBER;
 
 #ifdef DEBUG
-  printf( "Adjusted number of threads : %3d\n", blas_num_threads);
+  printf( "Adjusted number of threads : %3d\n", params->num_threads);
 #endif
 
-  blas_cpu_number = blas_num_threads;
+  blas_cpu_number = params->num_threads;
 
-  return blas_num_threads;
+  return params->num_threads;
 }
 #endif
 
@@ -944,7 +939,8 @@ void *blas_memory_alloc(int procpos){
 #endif
 
 #ifdef SMP
-      if (!blas_num_threads) blas_cpu_number = blas_get_cpu_number();
+      threading_params_t * p = openblas_get_threading_params();
+      if (!p->num_threads) blas_cpu_number = blas_get_cpu_number();
 #endif
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64) || defined(ARCH_IA64) || defined(ARCH_MIPS64)
@@ -1239,8 +1235,9 @@ static void _init_thread_memory(void *buffer) {
 
   blas_queue_t queue[MAX_CPU_NUMBER];
   int num_cpu;
+  threading_params_t * p = openblas_get_threading_params();
 
-  for (num_cpu = 0; num_cpu < blas_num_threads; num_cpu++) {
+  for (num_cpu = 0; num_cpu < p->num_threads; num_cpu++) {
 
     blas_queue_init(&queue[num_cpu]);
     queue[num_cpu].mode    = BLAS_DOUBLE | BLAS_REAL;

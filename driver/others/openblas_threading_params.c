@@ -32,21 +32,26 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "common.h"
 
-#ifdef SMP_SERVER
+// Our global threading parameters
+threading_params_t threading_params;
 
-extern  void openblas_set_num_threads(int num_threads) ;
-
-void openblas_set_num_threads_(int* num_threads){
-	openblas_set_num_threads(*num_threads);
+// Return our global threading parameters structure
+threading_params_t * openblas_get_threading_params( void ) {
+  return &threading_params;
 }
 
-#else
-//Single thread
+// Set new threading parameters
+void openblas_set_threading_params(threading_params_t * params) {
+  memcpy(&threading_params, params, sizeof(threading_params_t));
 
-void openblas_set_num_threads(int num_threads) {
+  // If we're not multithreaded, don't give the user hope
+  threading_params.num_threads = 1;
 }
 
-void openblas_set_num_threads_(int* num_threads){
+threading_params_t * openblas_init_threading_params( void ) {
+  threading_params.num_threads = 0;
+  threading_params.threshold_surpassed = 0;
+  threading_params.gemm_threshold = 50;
 
+  return &threading_params;
 }
-#endif

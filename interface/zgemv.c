@@ -238,14 +238,15 @@ void CNAME(enum CBLAS_ORDER order,
   int  nthreads_avail = nthreads_max;
 
   double MNK = (double) m * (double) n;
-  if ( MNK <= ( 256.0  * (double) (GEMM_MULTITHREAD_THRESHOLD * GEMM_MULTITHREAD_THRESHOLD)  ))
+  threading_params_t * p = openblas_get_threading_params();
+  int gemm_threshold = p->gemm_threshold;
+  if ( MNK <= ( 256.0  * (double) (gemm_threshold * gemm_threshold)  ))
         nthreads_max = 1;
 
   if ( nthreads_max > nthreads_avail )
-        nthreads = nthreads_avail;
+    nthreads = nthreads_avail;
   else
-        nthreads = nthreads_max;
-
+    nthreads = nthreads_max;
 
   if (nthreads == 1) {
 #endif
@@ -255,7 +256,7 @@ void CNAME(enum CBLAS_ORDER order,
 #ifdef SMP
 
   } else {
-
+    p->threshold_surpassed++;
     (gemv_thread[(int)trans])(m, n, ALPHA, a, lda, x, incx, y, incy, buffer, nthreads);
 
   }

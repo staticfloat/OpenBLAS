@@ -54,13 +54,14 @@ static void * blas_thread_buffer[MAX_CPU_NUMBER];
 void goto_set_num_threads(int num_threads) {
 
   int i=0;
+  threading_params_t * p = openblas_get_threading_params();
 
-  if (num_threads < 1) num_threads = blas_num_threads;
+  if (num_threads < 1) num_threads = p->num_threads;
 
   if (num_threads > MAX_CPU_NUMBER) num_threads = MAX_CPU_NUMBER;
 
-  if (num_threads > blas_num_threads) {
-    blas_num_threads = num_threads;
+  if (num_threads > p->num_threads) {
+    p->num_threads = num_threads;
   }
 
   blas_cpu_number  = num_threads;
@@ -97,8 +98,9 @@ int blas_thread_init(void){
   blas_get_cpu_number();
 
   blas_server_avail = 1;
+  threading_params_t * p = openblas_get_threading_params();
 
-  for(i=0; i<blas_num_threads; i++){
+  for(i=0; i<p->num_threads; i++){
     blas_thread_buffer[i]=blas_memory_alloc(2);
   }
   for(; i<MAX_CPU_NUMBER; i++){

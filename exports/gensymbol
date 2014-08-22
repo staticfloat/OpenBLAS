@@ -81,13 +81,14 @@
 
 #both underscore and no underscore
 @misc_common_objs = (
-                     openblas_set_num_threads, openblas_get_parallel,
+                     openblas_get_parallel,
                     );
 
 @misc_no_underscore_objs = (
                             goto_set_num_threads,
                             openblas_get_config,
                             openblas_get_corename,
+                            openblas_set_threading_params, openblas_get_threading_params,
                            );
 
 @misc_underscore_objs = (
