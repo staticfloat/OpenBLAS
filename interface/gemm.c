@@ -399,10 +399,10 @@ void CNAME(enum CBLAS_ORDER order, enum CBLAS_TRANSPOSE TransA, enum CBLAS_TRANS
   int nthreads_max = num_cpu_avail(3);
   int nthreads_avail = nthreads_max;
 
-  double MNK = (double) args.m * (double) args.n * (double) args.k;
   threading_params_t * p = openblas_get_threading_params();
   int gemm_threshold = p->gemm_threshold;
 #ifndef COMPLEX
+  double MNK = (double) args.m * (double) args.n * (double) args.k;
   if ( MNK <= (65536.0  * (double) gemm_threshold)  )
 	nthreads_max = 1;
 #else
