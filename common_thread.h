@@ -174,7 +174,7 @@ int exec_blas(BLASLONG num_cpu, blas_param_t *param, void *buffer);
 // This structure holds the thresholds and parameters used to tune multithreading
 typedef struct {
   // Number of threads to use (supplants blas_num_threads)
-  uint32_t num_threads;
+  int32_t num_threads;
 
   // Incremented every time a decision is made to thread due to a surpassed threshold
   uint32_t threshold_surpassed;

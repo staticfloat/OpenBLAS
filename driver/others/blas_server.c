@@ -522,8 +522,8 @@ int blas_thread_init(void){
   pthread_attr_t attr;
 #endif
 
-  // Initialize threading parameters
-  threading_params_t * params = openblas_init_threading_params();
+  // Get threading parameters
+  threading_params_t * params = openblas_get_threading_params();
 
   if (blas_server_avail) return 0;
 
